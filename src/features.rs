@@ -306,8 +306,7 @@ fn extract_beta_features(
     t_max: f64,
 ) -> FeatureMap {
     let mut f = FeatureMap::new();
-    for k in ["np_beta_std", "np_beta_median",
-              "np_beta_post_peak_slope_median"] {
+    for k in ["np_beta_std", "np_beta_median"] {
         f.insert(k.into(), None);
     }
 
@@ -365,25 +364,8 @@ fn extract_beta_features(
     let beta_mean = finite_betas.iter().sum::<f64>() / n_b;
     let beta_std = (finite_betas.iter().map(|v| (v - beta_mean).powi(2)).sum::<f64>() / n_b).sqrt();
 
-    // Post-peak d(beta)/dt
-    let peak_idx = achromatic_mag.iter().enumerate()
-        .filter(|(_, m)| m.is_finite())
-        .min_by(|(_, a), (_, b)| a.total_cmp(b))
-        .map(|(i, _)| i).unwrap_or(0);
-    let mut slopes: Vec<f64> = Vec::new();
-    for i in peak_idx..betas.len().saturating_sub(1) {
-        let b0 = betas[i]; let b1 = betas[i + 1];
-        let dt = times[i + 1] - times[i];
-        if b0.is_finite() && b1.is_finite() && dt > 0.0 {
-            slopes.push((b1 - b0) / dt);
-        }
-    }
-    let beta_slope = beta_median_of(&mut slopes);
-
     f.insert("np_beta_std".into(), if beta_std.is_finite() { Some(beta_std) } else { None });
     f.insert("np_beta_median".into(), if beta_median.is_finite() { Some(beta_median) } else { None });
-    f.insert("np_beta_post_peak_slope_median".into(),
-        if beta_slope.is_finite() { Some(beta_slope) } else { None });
     f
 }
 
